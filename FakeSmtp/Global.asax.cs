@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System.Web;
 using System.Web.Mvc;
 using System.Web.Routing;
 using FakeSmtp.Helpers;
@@ -8,7 +7,7 @@ using netDumbster.smtp;
 
 namespace FakeSmtp
 {
-    public class MvcApplication : System.Web.HttpApplication
+    public class MvcApplication : HttpApplication
     {
         public static SimpleSmtpServer SmtpServer { get; set; }
 
@@ -16,7 +15,7 @@ namespace FakeSmtp
 
         public static int MaximumLimit { get; set; } = 1000;
 
-        public static FixedSizeAndReversedOrderQueue<Email> Inbox { get; set; }
+        public static Inbox Inbox { get; set; }
 
         protected void Application_Start()
         {
@@ -24,7 +23,7 @@ namespace FakeSmtp
 
             RouteConfig.RegisterRoutes(RouteTable.Routes);
 
-            Inbox = new FixedSizeAndReversedOrderQueue<Email>(MaximumLimit);
+            Inbox = new Inbox(MaximumLimit);
 
             StartSmtpServer(5000, MaximumLimit);
         }
@@ -37,7 +36,7 @@ namespace FakeSmtp
 
         public static void StartSmtpServer(int port, int limit)
         {
-            Inbox = new FixedSizeAndReversedOrderQueue<Email>(limit, Inbox);
+            Inbox = new Inbox(limit, Inbox);
 
             SmtpServer = SimpleSmtpServer.Start(port);
             IsSmtpServerOn = true;
@@ -56,9 +55,7 @@ namespace FakeSmtp
 
         private static void SmtpServer_MessageReceived(object sender, MessageReceivedArgs e)
         {
-            var newEmailId = Inbox.Any() ? Inbox.First().Id + 1 : 1;
-
-            Inbox.Insert(new Email(e.Message, newEmailId));
+            Inbox.Receive(new Email(e.Message));
 
             SmtpServer.ClearReceivedEmail();
         }

@@ -49,7 +49,7 @@ namespace FakeSmtp.Models
 		public string RawData { get; set; }
 		
 
-		public Email(SmtpMessage smtpMessage, int index, bool withoutRawData = false)
+		public Email(SmtpMessage smtpMessage, int index = -1, bool withoutRawData = false)
 		{
 			MailMessage mailMessage = Helpers.MailMessageMimeParser.ParseMessage(new StringReader(smtpMessage.Data));
 

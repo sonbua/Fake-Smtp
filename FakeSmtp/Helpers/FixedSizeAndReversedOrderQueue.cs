@@ -1,31 +1,33 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace FakeSmtp.Helpers
 {
     public class FixedSizeAndReversedOrderQueue<T> : IEnumerable<T>
     {
+        private readonly int _size;
         private readonly List<T> _items;
         private readonly object _lockObject = new object();
 
         public FixedSizeAndReversedOrderQueue(int size)
         {
-            Size = size;
+            _size = size;
             _items = new List<T>();
         }
 
         public FixedSizeAndReversedOrderQueue(int size, FixedSizeAndReversedOrderQueue<T> existingQueue)
         {
-            Size = size;
+            _size = size;
             _items = new List<T>(existingQueue._items);
 
-            while (_items.Count > Size)
+            if (_items.Count > _size)
             {
-                _items.RemoveRange(Size, _items.Count - Size);
+                _items.RemoveRange(_size, _items.Count - _size);
             }
         }
 
-        public int Size { get; }
+        public int Count => _items.Count;
 
         IEnumerator IEnumerable.GetEnumerator()
         {
@@ -40,16 +42,28 @@ namespace FakeSmtp.Helpers
             }
         }
 
-        public void Insert(T item)
+        public void Enqueue(T item)
         {
             lock (_lockObject)
             {
-                if (_items.Count == Size)
+                if (_items.Count == _size)
                 {
                     _items.RemoveAt(_items.Count - 1);
                 }
 
                 _items.Insert(0, item);
+            }
+        }
+
+        public T Dequeue()
+        {
+            lock (_lockObject)
+            {
+                var dequeuedItem = _items.Last();
+
+                _items.RemoveAt(_items.Count - 1);
+
+                return dequeuedItem;
             }
         }
 
