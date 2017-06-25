@@ -113,7 +113,7 @@ namespace FakeSmtp.Controllers
 		{
 			MessageRepository.SendTestEmail();
 
-			var emailId = MvcApplication.Inbox.Count();
+		    var emailId = MvcApplication.Inbox.First().Id;
 
 			return RedirectToAction("Message", new {id = emailId});
 		}
@@ -121,8 +121,8 @@ namespace FakeSmtp.Controllers
 		public ActionResult TestEmailPlus()
 		{
 			MessageRepository.SendTestEmailPlus();
-			
-			var emailId = MvcApplication.Inbox.Count(); 
+
+		    var emailId = MvcApplication.Inbox.First().Id;
 
 			return RedirectToAction("Message", new {id = emailId});
 		}
