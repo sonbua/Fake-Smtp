@@ -89,6 +89,7 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="Helpers\FixedSizeAndReversedOrderQueue.cs" />
     <Compile Include="Helpers\MailMessageMimeParser.cs" />
     <Compile Include="IFakeSmtpService.cs" />
     <Compile Include="Models\Attachment.cs" />

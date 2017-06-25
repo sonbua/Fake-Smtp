@@ -11,29 +11,19 @@ namespace FakeSmtp.Repositories
 {
 	public class MessageRepository
 	{
-
 		public static List<Email> GetReceivedEmails()
 		{
-			return MvcApplication.ReceivedEmails;
+			return MvcApplication.Inbox.ToList();
 		}
 
 		public static List<Email> GetReceivedEmails(int pageSize, int pageNumber)
 		{
-			return MvcApplication.ReceivedEmails.Skip(pageSize * (pageNumber - 1)).Take(pageSize).ToList();
+			return MvcApplication.Inbox.Skip(pageSize * (pageNumber - 1)).Take(pageSize).ToList();
 		}
 
 		public static Email GetEmailById(int id, bool withoutRawData = false )
 		{
-			var emails = MvcApplication.ReceivedEmails;
-			
-			var count = emails.Count();
-
-			if (0 < count && 0 < id && id <= count)
-			{
-				return emails[count - id];
-			}
-
-			return null;
+		    return MvcApplication.Inbox.FirstOrDefault(x => x.Id == id);
 		}
 
 		public static string GetRawDataById(int id)
@@ -92,7 +82,7 @@ namespace FakeSmtp.Repositories
 
 		public static void Clear()
 		{
-			MvcApplication.ReceivedEmails.Clear();
+			MvcApplication.Inbox.Clear();
 			MvcApplication.SmtpServer.ClearReceivedEmail();
 		}
 
@@ -211,5 +201,4 @@ namespace FakeSmtp.Repositories
 		public int PageNumber { get; set; }
 		public string PageLabel { get; set; }
 	}
-	
 }

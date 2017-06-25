@@ -1,71 +1,66 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Web.Mvc;
 using System.Web.Routing;
+using FakeSmtp.Helpers;
 using FakeSmtp.Models;
 using netDumbster.smtp;
 
 namespace FakeSmtp
 {
-	public class MvcApplication : System.Web.HttpApplication
-	{
-		public static SimpleSmtpServer SmtpServer {get;set;}
-		public static bool IsSmtpServerOn {get;set;}
-		public static int MaximumLimit {get;set;}
-		public static List<Email> ReceivedEmails {get;set;}
+    public class MvcApplication : System.Web.HttpApplication
+    {
+        public static SimpleSmtpServer SmtpServer { get; set; }
 
+        public static bool IsSmtpServerOn { get; set; }
 
-		protected void Application_Start()
-		{
-			AreaRegistration.RegisterAllAreas();
+        public static int MaximumLimit { get; set; } = 1000;
 
-			RouteConfig.RegisterRoutes(RouteTable.Routes);
+        public static FixedSizeAndReversedOrderQueue<Email> Inbox { get; set; }
 
+        protected void Application_Start()
+        {
+            AreaRegistration.RegisterAllAreas();
 
-			ReceivedEmails = new List<Email>();
+            RouteConfig.RegisterRoutes(RouteTable.Routes);
 
-			StartSmtpServer(5000, 1000);
-		}
+            Inbox = new FixedSizeAndReversedOrderQueue<Email>(MaximumLimit);
 
-		public static void StartSmtpServer(int port, int limit)
-		{
-			if (ReceivedEmails.Count > limit)
-			{
-				ReceivedEmails.RemoveRange(limit - 1, ReceivedEmails.Count - limit);
-			}
-			
-			SmtpServer = SimpleSmtpServer.Start(port);
-			IsSmtpServerOn = true;
-			MaximumLimit = limit;
+            StartSmtpServer(5000, MaximumLimit);
+        }
 
-			SmtpServer.MessageReceived += SmtpServer_MessageReceived;
-		}
+        protected void Application_End()
+        {
+            SmtpServer.Stop();
+            IsSmtpServerOn = false;
+        }
 
-		public static void StopSmtpServer()
-		{
-			SmtpServer.MessageReceived -= SmtpServer_MessageReceived;
-			SmtpServer.ClearReceivedEmail();
-			SmtpServer.Stop();
-			IsSmtpServerOn = false;
-		}
-		
-		private static void SmtpServer_MessageReceived(object sender, MessageReceivedArgs e)
-		{
-			if (ReceivedEmails.Count == MaximumLimit)
-			{
-				ReceivedEmails.RemoveAt(ReceivedEmails.Count - 1);
-			}
+        public static void StartSmtpServer(int port, int limit)
+        {
+            Inbox = new FixedSizeAndReversedOrderQueue<Email>(limit, Inbox);
 
-			var newEmailId = (ReceivedEmails.Count == 0) ? 1 : ReceivedEmails[0].Id + 1;
-			
-			ReceivedEmails.Insert(0, new Email(e.Message, newEmailId));
+            SmtpServer = SimpleSmtpServer.Start(port);
+            IsSmtpServerOn = true;
+            MaximumLimit = limit;
 
-			SmtpServer.ClearReceivedEmail();
-		}
-		
-		protected void Application_End()
-		{
-			SmtpServer.Stop();
-			IsSmtpServerOn = false;
-		}
-	}
+            SmtpServer.MessageReceived += SmtpServer_MessageReceived;
+        }
+
+        public static void StopSmtpServer()
+        {
+            SmtpServer.MessageReceived -= SmtpServer_MessageReceived;
+            SmtpServer.ClearReceivedEmail();
+            SmtpServer.Stop();
+            IsSmtpServerOn = false;
+        }
+
+        private static void SmtpServer_MessageReceived(object sender, MessageReceivedArgs e)
+        {
+            var newEmailId = Inbox.Any() ? Inbox.First().Id + 1 : 1;
+
+            Inbox.Insert(new Email(e.Message, newEmailId));
+
+            SmtpServer.ClearReceivedEmail();
+        }
+    }
 }

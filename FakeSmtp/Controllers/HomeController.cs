@@ -5,7 +5,6 @@ using System.Web.Mvc;
 using FakeSmtp.Models;
 using FakeSmtp.Repositories;
 
-
 namespace FakeSmtp.Controllers
 {
 	[HandleError]
@@ -36,7 +35,7 @@ namespace FakeSmtp.Controllers
 			var sessionPageSize = (int) ( pageSize ?? System.Web.HttpContext.Current.Session["PageSize"] ?? 10 );
 			var currentPageNumber =  (int) ( pageNumber ?? System.Web.HttpContext.Current.Session["PageNumber"] ?? 1 );
 
-			if (sessionPageSize == 0 || MvcApplication.ReceivedEmails.Count() < sessionPageSize * (currentPageNumber - 1))
+			if (sessionPageSize == 0 || MvcApplication.Inbox.Count() < sessionPageSize * (currentPageNumber - 1))
 			{
 				currentPageNumber = 1;
 			}
@@ -49,16 +48,15 @@ namespace FakeSmtp.Controllers
 
 			sessionPageSize = (sessionPageSize == 0) ? int.MaxValue : sessionPageSize;
 
-			ViewBag.PageAnchors = MessageRepository.GetPageAnchors(MvcApplication.ReceivedEmails.Count(), sessionPageSize, currentPageNumber);
+			ViewBag.PageAnchors = MessageRepository.GetPageAnchors(MvcApplication.Inbox.Count(), sessionPageSize, currentPageNumber);
 			
 			var model = MessageRepository.GetReceivedEmails(sessionPageSize, currentPageNumber);
 
-			ViewBag.TotalCount = MvcApplication.ReceivedEmails.Count();
+			ViewBag.TotalCount = MvcApplication.Inbox.Count();
 			ViewBag.OnPageCount = model.Count;
 			
 			return model;
 		}
-
 
 	    public ActionResult Message(int id)
 	    {
@@ -79,13 +77,12 @@ namespace FakeSmtp.Controllers
 			return File(fileBytes, MediaTypeNames.Application.Octet, fileName);
 		}
 
-
 	    public ActionResult Settings()
 	    {
 		    ViewBag.Port = MvcApplication.SmtpServer.Port;
 		    ViewBag.IsSmtpServerOn = MvcApplication.IsSmtpServerOn;
 		    ViewBag.MaximumLimit = MvcApplication.MaximumLimit;
-		    ViewBag.EmailCount = MvcApplication.ReceivedEmails.Count();;
+		    ViewBag.EmailCount = MvcApplication.Inbox.Count();;
 		    ViewBag.ServerName = Request.ServerVariables.Get("SERVER_NAME");
 
 			return View();
@@ -112,22 +109,20 @@ namespace FakeSmtp.Controllers
 			return RedirectToAction("Settings");
 		}
 
-
 		public ActionResult TestEmail()
 		{
 			MessageRepository.SendTestEmail();
 
-			var emailId = MvcApplication.ReceivedEmails.Count();
+			var emailId = MvcApplication.Inbox.Count();
 
 			return RedirectToAction("Message", new {id = emailId});
 		}
-
 
 		public ActionResult TestEmailPlus()
 		{
 			MessageRepository.SendTestEmailPlus();
 			
-			var emailId = MvcApplication.ReceivedEmails.Count(); 
+			var emailId = MvcApplication.Inbox.Count(); 
 
 			return RedirectToAction("Message", new {id = emailId});
 		}
@@ -142,7 +137,6 @@ namespace FakeSmtp.Controllers
 			return RedirectToAction("Messages", new { pageNumber = 1 });
 		}
 
-
 		public ActionResult Error()
 		{
 			Server.ClearError();
@@ -150,11 +144,3 @@ namespace FakeSmtp.Controllers
 		}
     }
 }
-
-
-
-
-
-
-
-// ((List<Email>) System.Web.HttpContext.Current.Application["ReceivedEmails"]).Count;
